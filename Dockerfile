@@ -152,7 +152,13 @@ LABEL org.opencontainers.image.title="dockerfile-data-validation" \
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
-RUN groupadd --system --gid 10001 dvgate \
+# Apply Debian security updates so CVEs that already have a fix are not shipped
+# (CI's Trivy step fails the build on any fixable HIGH or CRITICAL finding).
+RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* \
+ && groupadd --system --gid 10001 dvgate \
  && useradd --system --uid 10001 --gid dvgate --no-create-home --shell /usr/sbin/nologin dvgate
 WORKDIR /app
 COPY --from=tooling /opt/venv /opt/venv

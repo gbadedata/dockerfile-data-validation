@@ -120,6 +120,7 @@ contract is never reported as bad data.
 | Pickled model files run code when loaded | Parameters stored as JSON; prediction needs only NumPy |
 | Unpinned dependencies change between builds | `requirements.lock`, installed into a venv in the tooling stage |
 | The container runs as root | UID 10001, checked by `verify-image.sh` |
+| The base image ships with vulnerabilities that already have a fix | The runtime stage applies Debian security updates; Trivy fails CI on any fixable HIGH or CRITICAL finding |
 
 ## Run it
 
