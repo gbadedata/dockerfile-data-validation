@@ -1,0 +1,171 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# An explicit `shell: bash` makes Actions run steps with -eo pipefail, so a
+# failing command piped into tee still fails the step.
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, tests and static gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install -r requirements.lock -r requirements-train.lock
+          python -m pip install -e ".[dev]" hadolint-bin==2.15.1 shellcheck-py==0.11.0.1
+
+      - name: Ruff
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Unit tests
+        run: pytest -v
+
+      - name: Hadolint
+        run: hadolint --config .hadolint.yaml Dockerfile fixtures/Dockerfile.tampered
+
+      - name: ShellCheck
+        run: shellcheck scripts/*.sh
+
+      - name: Dockerfile declares every required label
+        run: dvgate lint-dockerfile --report reports/dockerfile-labels.json
+
+      - name: "Reject: a required label missing from the Dockerfile"
+        run: |
+          sed '/io.gbadedata.dataset.sha256=/d' Dockerfile > "$RUNNER_TEMP/Dockerfile.missing"
+          scripts/expect-failure.sh 'FAIL\] declared\.io\.gbadedata\.dataset\.sha256' -- \
+            dvgate lint-dockerfile --dockerfile "$RUNNER_TEMP/Dockerfile.missing"
+
+      - name: Committed model is byte-identical to a fresh retrain
+        run: |
+          dvgate train --dataset data/raw/penguins.csv --contract contracts/penguins.v1.yaml \
+            --model-contract contracts/model.v1.yaml --out "$RUNNER_TEMP/model"
+          diff -r model "$RUNNER_TEMP/model"
+
+      - name: Fixtures are up to date
+        run: |
+          python fixtures/make_fixtures.py
+          git diff --exit-code -- fixtures/
+
+  image:
+    name: Build, verify and reject bad inputs
+    needs: checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: dockerfile-data-validation:ci
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dvgate on the runner (computes build args, checks labels)
+        run: |
+          python -m pip install -r requirements.lock
+          python -m pip install --no-deps -e .
+
+      - name: Build the image (all gates run inside the build)
+        run: scripts/build-image.sh "$IMAGE" -- --progress=plain
+
+      - name: Verify labels against the standard and the in-image manifest, then selfcheck
+        run: scripts/verify-image.sh "$IMAGE" reports/image
+
+      - name: "Reject: invalid values and duplicate rows"
+        env:
+          DATASET_RECORD: fixtures/bad-values/dataset.yaml
+        run: |
+          scripts/expect-failure.sh 'FAIL\] dataset\.(duplicate_rows|quarantine_fraction)' -- \
+            scripts/build-image.sh neg:bad-values -- --progress=plain
+
+      - name: "Reject: a column missing from the dataset"
+        env:
+          DATASET_RECORD: fixtures/missing-column/dataset.yaml
+        run: |
+          scripts/expect-failure.sh "FAIL\] schema\.required_columns: missing: \['island'\]" -- \
+            scripts/build-image.sh neg:missing-column -- --progress=plain
+
+      - name: "Reject: a model card that overstates accuracy"
+        env:
+          MODEL_DIR: fixtures/model-inflated-card
+        run: |
+          scripts/expect-failure.sh 'FAIL\] card\.accuracy' -- \
+            scripts/build-image.sh neg:inflated-card -- --progress=plain
+
+      - name: "Reject: a build arg that misdescribes the dataset"
+        run: |
+          zeros="$(printf '0%.0s' {1..64})"
+          scripts/expect-failure.sh 'FAIL\] build_arg\.dataset\.sha256' -- \
+            scripts/build-image.sh neg:lying-arg -- --progress=plain --build-arg "DATASET_SHA256=${zeros}"
+
+      - name: "Reject: a label overridden after the gates ran"
+        run: |
+          fake="$(printf 'a%.0s' {1..64})"
+          scripts/build-image.sh neg:override -- --label "io.gbadedata.dataset.sha256=${fake}"
+          scripts/expect-failure.sh 'label\.io\.gbadedata\.dataset\.sha256: label .* but the image contains' -- \
+            scripts/verify-image.sh neg:override
+
+      - name: "Reject: a shipped file changed after validation"
+        run: |
+          docker build -f fixtures/Dockerfile.tampered --build-arg BASE_IMAGE="$IMAGE" -t neg:tampered fixtures
+          scripts/expect-failure.sh 'file\.data/dataset\.csv: CHANGED' -- docker run --rm neg:tampered
+
+      - name: Trivy vulnerability scan (fails on fixable HIGH or CRITICAL)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq wget gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" \
+            | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq trivy
+          trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+            --format table "$IMAGE" | tee reports/image/trivy.txt
+
+      - name: Upload validation reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-reports
+          path: reports/
+
+      - name: Publish to GHCR and re-verify what the registry serves
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          repo="ghcr.io/${GITHUB_REPOSITORY,,}"
+          version="$(docker image inspect "$IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}')"
+          for tag in "sha-${GITHUB_SHA::7}" "$version" latest; do
+            docker tag "$IMAGE" "${repo}:${tag}"
+            docker push "${repo}:${tag}"
+          done
+          docker image rm "${repo}:sha-${GITHUB_SHA::7}"
+          docker pull "${repo}:sha-${GITHUB_SHA::7}"
+          scripts/verify-image.sh "${repo}:sha-${GITHUB_SHA::7}" reports/published

@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below."
+title: "Dockerfile Data Validation"
+abstract: "A multi-stage Docker build that validates a dataset, its schema and a model artefact before an image can exist, and labels every image with what it contains, by hash, under a versioned label standard."
+authors:
+  - family-names: Odimayo
+    given-names: Oluwagbade
+repository-code: "https://github.com/gbadedata/dockerfile-data-validation"
+url: "https://gbadedata.com"
+license: MIT
+version: "1.0.0"
+date-released: "2026-11-09"
+keywords:
+  - docker
+  - dockerfile labels
+  - data validation
+  - data contracts
+  - ci/cd
+  - mlops

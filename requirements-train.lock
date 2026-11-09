@@ -1,0 +1,5 @@
+# Training-only dependencies (used outside the image to produce model/).
+scikit-learn==1.9.1
+scipy==1.18.1
+joblib==1.6.0
+threadpoolctl==3.7.0

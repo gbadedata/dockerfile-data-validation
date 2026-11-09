@@ -1,0 +1,60 @@
+# Image label standard, v1.
+#
+# Every image built from this repository must carry each label below, in the
+# format given. Labels marked `manifest` must also equal the value recorded in
+# the validation manifest written inside the image during the build, so a label
+# cannot claim a dataset, schema or model the image does not contain.
+standard: io.gbadedata/image-labels
+version: 1.0.0
+namespace: io.gbadedata
+
+patterns:
+  nonempty: '^\S.*$'
+  semver: '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$'
+  calver_or_semver: '^(\d{4}\.\d{2}\.\d{2}|\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)$'
+  sha256: '^[0-9a-f]{64}$'
+  git_sha: '^[0-9a-f]{40}$'
+  rfc3339_utc: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$'
+  https_url: '^https://\S+$'
+  spdx: '^[A-Za-z0-9.+-]+( (AND|OR) [A-Za-z0-9.+-]+)*$'
+  abs_path: '^/\S+$'
+
+labels:
+  # OCI pre-defined annotation keys
+  org.opencontainers.image.title:        {pattern: nonempty}
+  org.opencontainers.image.description:  {pattern: nonempty}
+  org.opencontainers.image.version:      {pattern: semver}
+  org.opencontainers.image.revision:     {pattern: git_sha}
+  org.opencontainers.image.created:      {pattern: rfc3339_utc}
+  org.opencontainers.image.source:       {pattern: https_url}
+  org.opencontainers.image.licenses:     {pattern: spdx}
+
+  # Dataset identity and lineage
+  io.gbadedata.dataset.name:      {pattern: nonempty,         manifest: dataset.name}
+  io.gbadedata.dataset.version:   {pattern: calver_or_semver, manifest: dataset.version}
+  io.gbadedata.dataset.sha256:    {pattern: sha256,           manifest: dataset.sha256}
+  io.gbadedata.dataset.source:    {pattern: https_url,        manifest: dataset.source}
+  io.gbadedata.dataset.revision:  {pattern: git_sha,          manifest: dataset.revision}
+  io.gbadedata.dataset.licence:   {pattern: spdx,             manifest: dataset.licence}
+
+  # Schema (data contract) the dataset was validated against
+  io.gbadedata.schema.name:       {pattern: nonempty, manifest: schema.name}
+  io.gbadedata.schema.version:    {pattern: semver,   manifest: schema.version}
+  io.gbadedata.schema.sha256:     {pattern: sha256,   manifest: schema.sha256}
+
+  # Model artefact
+  io.gbadedata.model.name:        {pattern: nonempty, manifest: model.name}
+  io.gbadedata.model.version:     {pattern: semver,   manifest: model.version}
+  io.gbadedata.model.sha256:      {pattern: sha256,   manifest: model.sha256}
+
+  # Validation
+  io.gbadedata.validation.report: {pattern: abs_path}
+  io.gbadedata.validation.policy: {allowed: [fail-closed]}
+  io.gbadedata.label-standard.version: {pattern: semver, equals_standard_version: true}
+
+rules:
+  # A key in our namespace that is not listed above is almost always a typo
+  # (io.gbadedata.dataset.sha265), so it fails rather than passing unnoticed.
+  unknown_namespace_keys: error
+  # Labels are public metadata. Nothing that looks like a credential belongs here.
+  secret_pattern: '(?i)(passw(or)?d|secret|token|api[_-]?key|private[_-]?key|BEGIN [A-Z ]*PRIVATE KEY)'

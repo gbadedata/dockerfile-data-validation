@@ -1,0 +1,58 @@
+# Data contract for the Palmer Penguins dataset.
+#
+# Column rules run on every row. A row that breaks one is quarantined with a
+# reason code rather than dropped silently. Dataset rules run on the file as a
+# whole, and any failure there fails the build.
+name: palmer-penguins
+version: 1.0.0
+
+format:
+  type: csv
+  delimiter: ","
+  encoding: utf-8
+  na_values: ["NA", ""]
+
+# Columns not listed here are rejected, so an upstream schema change is caught
+# instead of being shipped unnoticed.
+extra_columns: reject
+
+columns:
+  - name: species
+    type: string
+    allowed: [Adelie, Chinstrap, Gentoo]
+    missing: quarantine
+  - name: island
+    type: string
+    allowed: [Biscoe, Dream, Torgersen]
+    missing: quarantine
+  - name: bill_length_mm
+    type: float
+    range: [25, 70]
+    missing: quarantine
+  - name: bill_depth_mm
+    type: float
+    range: [10, 25]
+    missing: quarantine
+  - name: flipper_length_mm
+    type: integer
+    range: [150, 250]
+    missing: quarantine
+  - name: body_mass_g
+    type: integer
+    range: [2000, 7000]
+    missing: quarantine
+  - name: sex
+    type: string
+    allowed: [female, male]
+    missing: warn          # unknown sex is recorded, but the row is still usable
+  - name: year
+    type: integer
+    range: [2007, 2009]
+    missing: quarantine
+
+dataset_rules:
+  row_count: {min: 300, max: 400}
+  max_duplicate_rows: 0
+  max_quarantine_fraction: 0.02
+  require_all_categories: [species, island]
+  min_category_share: {column: species, min: 0.15}

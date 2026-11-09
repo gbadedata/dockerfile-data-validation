@@ -1,0 +1,26 @@
+# Contract for the model artefact shipped in the image.
+#
+# The validator does not trust the model card. It rebuilds the holdout split
+# from the validated dataset, re-scores the model, and fails if the card's
+# numbers differ or fall below the thresholds.
+name: penguin-species-classifier
+version: 1.0.0
+
+artefact:
+  format: dvgate-logreg/1      # plain JSON parameters, no pickle
+  files: [model.json, model_card.json]
+
+target: species
+features: [bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g]
+
+evaluation:
+  test_fraction: 0.2
+  seed: 2026
+  thresholds:
+    accuracy: 0.95
+    macro_f1: 0.95
+  card_tolerance: 0.000001
+
+lineage:
+  require_dataset_sha256_match: true
+  require_data_contract_version_match: true

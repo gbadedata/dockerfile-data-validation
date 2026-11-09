@@ -1,0 +1,15 @@
+# Provenance record for the dataset this image ships.
+# Every value here becomes an image label, and the build fails if the file on
+# disk does not hash to `sha256`.
+name: palmer-penguins
+version: "2024.09.19"            # calendar version: date of the upstream commit
+file: data/raw/penguins.csv
+sha256: f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93
+source: https://github.com/allisonhorst/palmerpenguins
+revision: 8957207b78d6ccd1b4654a9dd9c9041b657478ab
+upstream_path: inst/extdata/penguins.csv
+licence: CC0-1.0
+description: >-
+  Size measurements for 344 adult foraging penguins of three species, collected
+  2007-2009 near Palmer Station, Antarctica (Gorman, Williams and Fraser, 2014),
+  as packaged by the palmerpenguins R package.

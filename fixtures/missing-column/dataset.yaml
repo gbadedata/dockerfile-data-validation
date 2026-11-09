@@ -1,0 +1,16 @@
+# FIXTURE: the island column is missing; the schema check must fail
+# Provenance record for the dataset this image ships.
+# Every value here becomes an image label, and the build fails if the file on
+# disk does not hash to `sha256`.
+name: palmer-penguins
+version: "2024.09.19"            # calendar version: date of the upstream commit
+file: fixtures/missing-column/penguins.csv
+sha256: 0d9adffe2cd5eddb152786e83fb8576f1f0ed98fa83df4e11ca53c27fcb58446
+source: https://github.com/allisonhorst/palmerpenguins
+revision: 8957207b78d6ccd1b4654a9dd9c9041b657478ab
+upstream_path: inst/extdata/penguins.csv
+licence: CC0-1.0
+description: >-
+  Size measurements for 344 adult foraging penguins of three species, collected
+  2007-2009 near Palmer Station, Antarctica (Gorman, Williams and Fraser, 2014),
+  as packaged by the palmerpenguins R package.

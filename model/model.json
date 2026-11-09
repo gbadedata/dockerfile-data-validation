@@ -1,0 +1,63 @@
+{
+  "classes": [
+    "Adelie",
+    "Chinstrap",
+    "Gentoo"
+  ],
+  "coef": [
+    [
+      -2.56311506,
+      1.35635628,
+      -0.55850213,
+      0.19378224
+    ],
+    [
+      2.19252285,
+      0.2669709,
+      -0.61229255,
+      -1.33031561
+    ],
+    [
+      0.37059221,
+      -1.62332718,
+      1.17079468,
+      1.13653337
+    ]
+  ],
+  "features": [
+    "bill_length_mm",
+    "bill_depth_mm",
+    "flipper_length_mm",
+    "body_mass_g"
+  ],
+  "format": "dvgate-logreg/1",
+  "intercept": [
+    0.3844766,
+    -0.08865666,
+    -0.29581994
+  ],
+  "name": "penguin-species-classifier",
+  "scaler": {
+    "mean": [
+      43.88095238,
+      17.14688645,
+      200.87545788,
+      4181.04395604
+    ],
+    "scale": [
+      5.49857822,
+      1.9840572,
+      14.17056816,
+      788.17387
+    ]
+  },
+  "target": "species",
+  "training": {
+    "data_contract": "palmer-penguins",
+    "data_contract_version": "1.0.0",
+    "dataset_sha256": "f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93",
+    "seed": 2026,
+    "test_fraction": 0.2
+  },
+  "version": "1.0.0"
+}

@@ -1,0 +1,17 @@
+{
+  "evaluation": {
+    "metrics": {
+      "accuracy": 0.999,
+      "macro_f1": 0.98218984
+    },
+    "n_test": 69,
+    "n_train": 273,
+    "seed": 2026,
+    "split": "stratified holdout",
+    "test_fraction": 0.2
+  },
+  "intended_use": "Teaching example: classify penguin species from four body measurements.",
+  "limitations": "Trained on 2007-2009 data from three islands near Palmer Station; not validated for other populations or years.",
+  "model": "penguin-species-classifier",
+  "version": "1.0.0"
+}

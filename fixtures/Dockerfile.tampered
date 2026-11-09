@@ -1,0 +1,7 @@
+# FIXTURE: changes a shipped file after validation. The container's selfcheck
+# must notice, because the file no longer matches the manifest's hash.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+USER 0
+RUN echo "Adelie,Torgersen,40.0,18.0,190,3800,male,2007" >> /app/data/dataset.csv
+USER 10001:10001

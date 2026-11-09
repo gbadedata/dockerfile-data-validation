@@ -1,0 +1,15 @@
+# Keep the build context to what the Dockerfile copies. Fixtures stay in, so
+# CI can build them and prove the gates reject them.
+.git
+.github
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+docs
+tests
+reports
+*.egg-info
+build
+dist

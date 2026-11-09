@@ -1,0 +1,16 @@
+# FIXTURE: 8 invalid values and 2 duplicate rows; the data gate must fail
+# Provenance record for the dataset this image ships.
+# Every value here becomes an image label, and the build fails if the file on
+# disk does not hash to `sha256`.
+name: palmer-penguins
+version: "2024.09.19"            # calendar version: date of the upstream commit
+file: fixtures/bad-values/penguins.csv
+sha256: 1dd3a321673b2051b26012a42e761e49283af605381da638770db1d3e20ea181
+source: https://github.com/allisonhorst/palmerpenguins
+revision: 8957207b78d6ccd1b4654a9dd9c9041b657478ab
+upstream_path: inst/extdata/penguins.csv
+licence: CC0-1.0
+description: >-
+  Size measurements for 344 adult foraging penguins of three species, collected
+  2007-2009 near Palmer Station, Antarctica (Gorman, Williams and Fraser, 2014),
+  as packaged by the palmerpenguins R package.
