@@ -1,0 +1,39 @@
+image labels (io.gbadedata/image-labels 1.0.0): PASSED
+  [ok  ] label.org.opencontainers.image.title: dockerfile-data-validation
+  [ok  ] label.org.opencontainers.image.description: Palmer Penguins dataset and species classifier, shipped only after data, schema and model gates pass
+  [ok  ] label.org.opencontainers.image.version: 1.0.0
+  [ok  ] label.org.opencontainers.image.revision: 23a2f83785ea6259884564fd568bb2b06544ab35
+  [ok  ] label.org.opencontainers.image.created: 2026-11-09T10:00:17Z
+  [ok  ] label.org.opencontainers.image.source: https://github.com/gbadedata/dockerfile-data-validation
+  [ok  ] label.org.opencontainers.image.licenses: MIT AND CC0-1.0
+  [ok  ] label.io.gbadedata.dataset.name: palmer-penguins
+  [ok  ] label.io.gbadedata.dataset.version: 2024.09.19
+  [ok  ] label.io.gbadedata.dataset.sha256: f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93
+  [ok  ] label.io.gbadedata.dataset.source: https://github.com/allisonhorst/palmerpenguins
+  [ok  ] label.io.gbadedata.dataset.revision: 8957207b78d6ccd1b4654a9dd9c9041b657478ab
+  [ok  ] label.io.gbadedata.dataset.licence: CC0-1.0
+  [ok  ] label.io.gbadedata.schema.name: palmer-penguins
+  [ok  ] label.io.gbadedata.schema.version: 1.0.0
+  [ok  ] label.io.gbadedata.schema.sha256: 0a37f26d391c1da173003335f8ebb06f5b2de50122fe14314e875cdeb765e588
+  [ok  ] label.io.gbadedata.model.name: penguin-species-classifier
+  [ok  ] label.io.gbadedata.model.version: 1.0.0
+  [ok  ] label.io.gbadedata.model.sha256: b9ef3bfbaf376e599fd697c33afb66d5c22ce1df101bf5ffb660efb1cbdb9357
+  [ok  ] label.io.gbadedata.validation.report: /app/reports/manifest.json
+  [ok  ] label.io.gbadedata.validation.policy: fail-closed
+  [ok  ] label.io.gbadedata.label-standard.version: 1.0.0
+  [ok  ] standard.unknown_keys: no unknown keys in the namespace
+  [ok  ] standard.no_secrets: no credential-like keys or values
+dataset palmer-penguins 2024.09.19 | schema palmer-penguins 1.0.0 | model penguin-species-classifier 1.0.0
+selfcheck: PASSED
+  [ok  ] file.contracts/model.v1.yaml: hash matches
+  [ok  ] file.contracts/penguins.v1.yaml: hash matches
+  [ok  ] file.data/dataset.csv: hash matches
+  [ok  ] file.data/dataset.yaml: hash matches
+  [ok  ] file.model/model.json: hash matches
+  [ok  ] file.model/model_card.json: hash matches
+  [ok  ] file.reports/data.json: hash matches
+  [ok  ] file.reports/model.json: hash matches
+  [ok  ] file.reports/quarantine.csv: hash matches
+  [ok  ] file.standards/labels.v1.yaml: hash matches
+  [ok  ] gates.recorded: all build gates recorded as passed
+verified dockerfile-data-validation:ci: labels, manifest and selfcheck all pass; runs as 10001:10001

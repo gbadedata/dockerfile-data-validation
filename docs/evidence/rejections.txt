@@ -1,0 +1,28 @@
+## Reject: a required label missing from the Dockerfile
+ok: failed as expected (exit 2); matched /FAIL\] declared\.io\.gbadedata\.dataset\.sha256/:
+    [FAIL] declared.io.gbadedata.dataset.sha256: not declared in the final stage
+
+## Reject: invalid values and duplicate rows
+ok: failed as expected (exit 1); matched /FAIL\] dataset\.(duplicate_rows|quarantine_fraction)/:
+    [FAIL] dataset.duplicate_rows: 2 duplicate rows (limit 0)
+    [FAIL] dataset.quarantine_fraction: 2.89% of rows quarantined (limit 2.00%)
+
+## Reject: a column missing from the dataset
+ok: failed as expected (exit 1); matched /FAIL\] schema\.required_columns: missing: \['island'\]/:
+    [FAIL] schema.required_columns: missing: ['island']
+
+## Reject: a model card that overstates accuracy
+ok: failed as expected (exit 1); matched /FAIL\] card\.accuracy/:
+    [FAIL] card.accuracy: card says 0.999, re-scored 0.98550725 (tolerance 1e-06)
+
+## Reject: a build arg that misdescribes the dataset
+ok: failed as expected (exit 1); matched /FAIL\] build_arg\.dataset\.sha256/:
+    [FAIL] build_arg.dataset.sha256: build arg says '0000000000000000000000000000000000000000000000000000000000000000', file is 'f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93'
+
+## Reject: a label overridden after the gates ran
+ok: failed as expected (exit 2); matched /label\.io\.gbadedata\.dataset\.sha256: label .* but the image contains/:
+    [FAIL] label.io.gbadedata.dataset.sha256: label 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' but the image contains 'f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93'
+
+## Reject: a shipped file changed after validation
+ok: failed as expected (exit 2); matched /file\.data/dataset\.csv: CHANGED/:
+    [FAIL] file.data/dataset.csv: CHANGED

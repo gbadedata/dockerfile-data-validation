@@ -1,0 +1,4 @@
+sha-23a2f83: digest: sha256:23aa52e9ef21dfc7a1afd6dd50460708fb3f8f354a2bd47b80708705c631bf4f size: 856
+1.0.0: digest: sha256:23aa52e9ef21dfc7a1afd6dd50460708fb3f8f354a2bd47b80708705c631bf4f size: 856
+latest: digest: sha256:23aa52e9ef21dfc7a1afd6dd50460708fb3f8f354a2bd47b80708705c631bf4f size: 856
+verified ghcr.io/gbadedata/dockerfile-data-validation:sha-23a2f83: labels, manifest and selfcheck all pass; runs as 10001:10001

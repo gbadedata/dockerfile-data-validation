@@ -48,19 +48,41 @@ fixed text in the Dockerfile (title, description, licences, report path and
 validation policy), and the static lint checks them against their formats. The
 full table, with formats and sources, is in [docs/label-standard.md](docs/label-standard.md).
 
-```console
-$ docker image inspect dockerfile-data-validation:local --format '{{json .Config.Labels}}'
+All 22 labels on the image built by CI run
+[42597537309](https://github.com/gbadedata/dockerfile-data-validation/actions/runs/42597537309)
+(commit `23a2f83`), unabridged. The values are as that run's label check printed them
+([docs/evidence/verify-image.txt](docs/evidence/verify-image.txt)). To read them from any
+published image:
+
+```bash
+docker image inspect ghcr.io/gbadedata/dockerfile-data-validation:latest \
+  --format '{{json .Config.Labels}}' | python -m json.tool
+```
+
+```json
 {
+  "io.gbadedata.dataset.licence": "CC0-1.0",
   "io.gbadedata.dataset.name": "palmer-penguins",
   "io.gbadedata.dataset.revision": "8957207b78d6ccd1b4654a9dd9c9041b657478ab",
   "io.gbadedata.dataset.sha256": "f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93",
+  "io.gbadedata.dataset.source": "https://github.com/allisonhorst/palmerpenguins",
   "io.gbadedata.dataset.version": "2024.09.19",
   "io.gbadedata.label-standard.version": "1.0.0",
   "io.gbadedata.model.name": "penguin-species-classifier",
+  "io.gbadedata.model.sha256": "b9ef3bfbaf376e599fd697c33afb66d5c22ce1df101bf5ffb660efb1cbdb9357",
+  "io.gbadedata.model.version": "1.0.0",
+  "io.gbadedata.schema.name": "palmer-penguins",
+  "io.gbadedata.schema.sha256": "0a37f26d391c1da173003335f8ebb06f5b2de50122fe14314e875cdeb765e588",
   "io.gbadedata.schema.version": "1.0.0",
   "io.gbadedata.validation.policy": "fail-closed",
+  "io.gbadedata.validation.report": "/app/reports/manifest.json",
+  "org.opencontainers.image.created": "2026-11-09T10:00:17Z",
+  "org.opencontainers.image.description": "Palmer Penguins dataset and species classifier, shipped only after data, schema and model gates pass",
   "org.opencontainers.image.licenses": "MIT AND CC0-1.0",
-  ...
+  "org.opencontainers.image.revision": "23a2f83785ea6259884564fd568bb2b06544ab35",
+  "org.opencontainers.image.source": "https://github.com/gbadedata/dockerfile-data-validation",
+  "org.opencontainers.image.title": "dockerfile-data-validation",
+  "org.opencontainers.image.version": "1.0.0"
 }
 ```
 
@@ -90,6 +112,21 @@ cannot pass because something unrelated broke.
 | Label overridden with `docker build --label` | post-build check | `label … but the image contains 'f204…'` |
 | A row appended to the shipped CSV after the build ([fixture](fixtures/Dockerfile.tampered)) | container selfcheck | `file.data/dataset.csv: CHANGED` |
 | `dataset.sha256` label deleted from the Dockerfile | static lint | `declared.io.gbadedata.dataset.sha256: not declared in the final stage` |
+
+### Evidence
+
+The very first CI run is the clearest proof that the gates work. The image built
+and passed every other check, then
+[Trivy failed the build](https://github.com/gbadedata/dockerfile-data-validation/actions/runs/42592962916):
+`zlib1g` in the `python:3.12-slim` base image had two HIGH CVEs (CVE-2026-76844,
+CVE-2026-85091), and Debian had already released a fixed package. Commit `999c472`
+added Debian security updates to the runtime stage instead of suppressing the
+finding. Every run on `main` since passes the scan with no fixable HIGH or CRITICAL findings,
+for example [run 42597537309](https://github.com/gbadedata/dockerfile-data-validation/actions/runs/42597537309).
+
+Actions logs expire, so excerpts of both runs are kept in [docs/evidence](docs/evidence):
+the Trivy tables, the label and selfcheck output, all 7 rejections with their
+messages, and the GHCR publish with re-verification.
 
 The `checks` job also retrains the model and fails unless the result is
 byte-identical to the committed artefact, and regenerates the fixtures and fails
@@ -160,7 +197,7 @@ model/                     model.json (parameters) and model_card.json
 src/dvgate/                validators: data.py, model.py, labels.py, manifest.py, cli.py
 scripts/                   build-image.sh, verify-image.sh, expect-failure.sh
 fixtures/                  deliberately broken inputs, and the script that makes them
-docs/                      label standard, validation logic, data governance
+docs/                      label standard, validation logic, data governance, CI evidence
 tests/                     58 unit tests, including a check that this README's numbers are true
 ```
 
