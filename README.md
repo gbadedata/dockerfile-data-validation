@@ -14,9 +14,10 @@ Built with Python, Bash, Docker (multi-stage, BuildKit), GitHub Actions, Trivy a
 |---|---|
 | **Dataset** | [Palmer Penguins](https://github.com/allisonhorst/palmerpenguins), 344 rows, CC0. 2 rows quarantined (all four measurements missing); 11 kept with a warning (sex not recorded). |
 | **Model** | Logistic regression stored as plain JSON (no pickle). 98.6% accuracy and 0.982 macro-F1 on a 69-row stratified holdout, re-scored inside the build rather than read from the model card. |
-| **Labels** | 22 required labels: 7 OCI keys and 15 in the `io.gbadedata` namespace. Each is checked for format, and the identity labels are checked against a manifest written inside the image. |
+| **Labels** | 22 required labels: 7 OCI keys and 15 in the `io.gbadedata` namespace. 17 from build args and 5 fixed in the Dockerfile. Every label is checked for format, and the identity labels are checked against a manifest written inside the image. |
+| **Base image** | `python:3.12-slim`, pinned by digest and kept current by Dependabot. Debian security updates are applied at build time, and Trivy fails CI on any fixable HIGH or CRITICAL finding. |
 | **Negative tests** | 7 deliberately broken inputs. CI must reject each one, and for the expected reason. |
-| **Unit tests** | 53 |
+| **Unit tests** | 58 |
 
 ## What a build does
 
@@ -26,7 +27,7 @@ flowchart TD
     subgraph docker build
       B["tooling stage<br/>pinned venv + dvgate"] --> C
       C["validate stage<br/>1. verify-inputs: build args match the bytes<br/>2. validate-data: schema, row rules, quarantine<br/>3. validate-model: re-score, lineage, card honesty<br/>4. manifest: every file by hash"] --> D
-      D["runtime stage<br/>22 LABELs from the same build args<br/>validated files only, UID 10001"]
+      D["runtime stage<br/>22 LABELs: 17 from the same build args,<br/>5 fixed in the Dockerfile<br/>validated files only, UID 10001"]
     end
     D --> E["scripts/verify-image.sh<br/>labels vs standard and vs in-image manifest;<br/>container selfcheck re-hashes every file"]
     E --> F["Trivy: fail on fixable HIGH/CRITICAL"] --> G["push to GHCR, pull back, verify again"]
@@ -40,9 +41,12 @@ of the final stage could skip every gate.
 
 ## Labels
 
-Every value is computed, never typed: from the files (`dvgate build-args`), from
-git, or from the clock. The full table, with formats and sources, is in
-[docs/label-standard.md](docs/label-standard.md).
+Every label that identifies what the image contains (dataset, schema, model,
+source revision, build time) is computed: from the files (`dvgate build-args`),
+from git, or from the clock. None of those is typed by hand. The other five are
+fixed text in the Dockerfile (title, description, licences, report path and
+validation policy), and the static lint checks them against their formats. The
+full table, with formats and sources, is in [docs/label-standard.md](docs/label-standard.md).
 
 ```console
 $ docker image inspect dockerfile-data-validation:local --format '{{json .Config.Labels}}'
@@ -72,8 +76,8 @@ Labels are checked at three points:
 
 ## What CI proves
 
-The `image` job builds the real image, verifies it, then builds each broken
-input and asserts it fails. [`scripts/expect-failure.sh`](scripts/expect-failure.sh)
+CI builds the real image, verifies it, then tries all 7 broken inputs below and
+asserts that each one fails. [`scripts/expect-failure.sh`](scripts/expect-failure.sh)
 requires both a non-zero exit **and** the expected message, so a negative test
 cannot pass because something unrelated broke.
 
@@ -109,7 +113,7 @@ contract is never reported as bad data.
 
 | Mistake | What happens here instead |
 |---|---|
-| Labels typed by hand drift away from the content | Computed from the files, checked during and after the build |
+| Labels typed by hand drift away from the content | Content labels are computed from the files, then checked during and after the build |
 | A build of the final stage silently skips the validation stage | The runtime stage copies reports from `validate`, so BuildKit must run it |
 | An empty build arg produces an empty label and a green build | Empty values fail `verify-inputs` |
 | A typo such as `dataset.sha265` passes unnoticed | Unknown keys in the namespace fail the standard |
@@ -118,16 +122,16 @@ contract is never reported as bad data.
 | The model card overstates the model | The model is re-scored; the card must match to 1e-6 |
 | A model trained on other data is shipped with this data | Lineage check on the training dataset's hash and contract version |
 | Pickled model files run code when loaded | Parameters stored as JSON; prediction needs only NumPy |
-| Unpinned dependencies change between builds | `requirements.lock`, installed into a venv in the tooling stage |
+| Unpinned dependencies change between builds | Python packages pinned in `requirements.txt`; the base image pinned by digest; Dependabot proposes updates as pull requests that run the full CI |
 | The container runs as root | UID 10001, checked by `verify-image.sh` |
 | The base image ships with vulnerabilities that already have a fix | The runtime stage applies Debian security updates; Trivy fails CI on any fixable HIGH or CRITICAL finding |
 
 ## Run it
 
 ```bash
-python -m pip install -r requirements.lock -r requirements-train.lock
+python -m pip install -r requirements.txt -r requirements-train.txt
 python -m pip install -e ".[dev]"
-pytest                                      # 53 unit tests
+pytest                                      # 58 unit tests
 dvgate lint-dockerfile                      # static label check
 
 scripts/build-image.sh dockerfile-data-validation:local
@@ -157,11 +161,16 @@ src/dvgate/                validators: data.py, model.py, labels.py, manifest.py
 scripts/                   build-image.sh, verify-image.sh, expect-failure.sh
 fixtures/                  deliberately broken inputs, and the script that makes them
 docs/                      label standard, validation logic, data governance
-tests/                     53 unit tests
+tests/                     58 unit tests, including a check that this README's numbers are true
 ```
 
 ## Limits
 
+- Builds are not bit-for-bit reproducible. The base image is pinned by digest, but
+  the runtime stage applies Debian security updates at build time, so two builds a
+  week apart can differ in the OS layer. That is a deliberate choice of patched over
+  identical. The dataset, contracts, model and Python packages are pinned and
+  verified by hash.
 - The labels and manifest prove an image is consistent with itself, not who built
   it. Image signing and build provenance attestations are the next step.
 - The model is a small teaching example. The point is the gates around it, not

@@ -5,8 +5,11 @@ This page explains the rules and the reasons for them.
 
 ## Principles
 
-1. **Labels are computed, never typed.** Every value comes from the files being
-   shipped (`dvgate build-args`) or from git and the clock (`scripts/build-image.sh`).
+1. **Content labels are computed, never typed.** Every label that identifies what
+   the image contains comes from the files being shipped (`dvgate build-args`) or
+   from git and the clock (`scripts/build-image.sh`): 17 of the 22. The other five
+   are descriptive fixed text in the Dockerfile, and the static lint checks them
+   against their formats.
 2. **Labels are checked twice.** Inside the build, `dvgate verify-inputs` stops the
    build if a build arg does not describe the bytes in the build context. After the
    build, `dvgate check-labels` compares the image's labels with the manifest written

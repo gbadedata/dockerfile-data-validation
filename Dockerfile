@@ -12,17 +12,19 @@
 # files being shipped. Building by hand without those args fails in
 # `verify-inputs`, because an empty label value is treated as an error.
 
-ARG PYTHON_IMAGE=python:3.12-slim
+# The base image is pinned by digest, so a moving tag cannot change the build
+# silently. Dependabot opens a pull request when python:3.12-slim moves, and the
+# change goes through the same gates as any other.
 
 # ---------------------------------------------------------------- tooling ---
-FROM ${PYTHON_IMAGE} AS tooling
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b AS tooling
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1
 WORKDIR /src
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
-COPY requirements.lock ./
-RUN pip install --no-cache-dir -r requirements.lock
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 COPY pyproject.toml README.md ./
 COPY src/ src/
 RUN pip install --no-cache-dir --no-deps . && dvgate --version
@@ -107,7 +109,7 @@ RUN dvgate manifest \
         --out reports/manifest.json
 
 # ---------------------------------------------------------------- runtime ---
-FROM ${PYTHON_IMAGE} AS runtime
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b AS runtime
 ARG IMAGE_VERSION
 ARG VCS_REF
 ARG BUILD_DATE
@@ -154,6 +156,7 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1
 # Apply Debian security updates so CVEs that already have a fix are not shipped
 # (CI's Trivy step fails the build on any fixable HIGH or CRITICAL finding).
+# Trade-off: this makes the OS layer depend on the build date. See README, Limits.
 RUN apt-get update \
  && apt-get upgrade -y --no-install-recommends \
  && apt-get clean \
